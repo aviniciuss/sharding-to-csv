@@ -1,6 +1,6 @@
 {
   "name": "sharding-to-csv",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A simple package to shard big Csv files into small files.",
   "main": "index.js",
   "scripts": {
