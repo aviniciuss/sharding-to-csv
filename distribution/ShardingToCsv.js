@@ -5,6 +5,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.ShardingToCsv = undefined;
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _iconvLite = require('iconv-lite');
@@ -39,37 +41,32 @@ var ShardingToCsv = exports.ShardingToCsv = function (_EventEmitter) {
 
     var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ShardingToCsv).call(this));
 
-    _this.file = file;
-    _this.opts = opts || {};
-    _this.opts.encoding = _this.opts.encoding || 'utf-8';
-    _this.opts.maxFileSize = _this.opts.maxFileSize || 536870912;
-    _this.initialize();
+    if (typeof file !== 'string') {
+      throw new Error('Param file invalid!');
+    }
+    if ((typeof opts === 'undefined' ? 'undefined' : _typeof(opts)) !== 'object') {
+      throw new Error('Param opts invalid!');
+    }
+    _this._file = file;
+    _this._opts = opts || {};
+    _this._initialize();
     return _this;
   }
 
   _createClass(ShardingToCsv, [{
-    key: 'initialize',
-    value: function initialize() {
-      this.count = 0;
-      this.bytes = 0;
-      this.header = null;
-      this.filename = _path2.default.basename(this.file, _path2.default.extname(this.file));
-      this.writeStream = _fs2.default.createWriteStream(_path2.default.dirname(this.file) + '/' + this.filename + '-' + this.count + '.csv');
-      this.readStream = _fs2.default.createReadStream(this.file).pipe(_iconvLite2.default.decodeStream(this.opts.encoding));
-      this.rl = new _Readline.Readline(this.readStream);
-    }
-  }, {
     key: 'shard',
     value: function shard() {
       var _this2 = this;
 
-      this.rl.on('line', function (line, lineCount, byteCount) {
-        _this2.writeLine(line, lineCount, byteCount);
+      var rl = new _Readline.Readline(_fs2.default.createReadStream(this._file).pipe(_iconvLite2.default.decodeStream(this._opts.encoding)));
+
+      rl.on('line', function (line, lineCount, byteCount) {
+        return _this2._writeLine(line, lineCount, byteCount);
       });
 
-      this.rl.on('close', function () {
-        if (_fs2.default.existsSync(_this2.file)) {
-          _fs2.default.unlinkSync(_this2.file);
+      rl.on('close', function () {
+        if (_fs2.default.existsSync(_this2._file)) {
+          _fs2.default.unlinkSync(_this2._file);
         }
         _this2.emit('completed');
       });
@@ -77,22 +74,43 @@ var ShardingToCsv = exports.ShardingToCsv = function (_EventEmitter) {
       return this;
     }
   }, {
-    key: 'writeLine',
-    value: function writeLine(line, lineCount, byteCount) {
-      this.bytes += line.length;
+    key: '_initialize',
+    value: function _initialize() {
+      this._opts.encoding = this._opts.encoding || 'utf-8';
+      this._opts.maxFileSize = this._opts.maxFileSize || 536870912;
+      this._count = 0;
+      this._bytes = 0;
+      this._filename = _path2.default.basename(this._file, _path2.default.extname(this._file));
+      this._writeStream = _fs2.default.createWriteStream(_path2.default.dirname(this._file) + '/' + this._filename + '-' + this._count + '.csv');
+    }
+  }, {
+    key: '_writeLine',
+    value: function _writeLine(line, lineCount, byteCount) {
+      this._bytes += line.length;
+
       if (lineCount === 0) {
-        this.header = _iconvLite2.default.encode(line + '\n', this.opts.encoding);
+        this._saveHeaderFile(line);
       }
 
-      this.writeStream.write(_iconvLite2.default.encode(line + '\n', this.opts.encoding));
+      this._writeStream.write(_iconvLite2.default.encode(line + '\n', this._opts.encoding));
 
-      if (this.bytes >= this.opts.maxFileSize) {
-        this.count++;
-        this.bytes = 0;
-        this.writeStream.end();
-        this.writeStream = _fs2.default.createWriteStream(_path2.default.dirname(this.file) + '/' + this.filename + '-' + this.count + '.csv');
-        this.writeStream.write(this.header);
+      if (this._bytes >= this._opts.maxFileSize) {
+        this._count++;
+        this._bytes = 0;
+        this._writeStream.end();
+        this._newShard();
       }
+    }
+  }, {
+    key: '_saveHeaderFile',
+    value: function _saveHeaderFile(line) {
+      this._header = _iconvLite2.default.encode(line + '\n', this._opts.encoding);
+    }
+  }, {
+    key: '_newShard',
+    value: function _newShard() {
+      this._writeStream = _fs2.default.createWriteStream(_path2.default.dirname(this._file) + '/' + this._filename + '-' + this._count + '.csv');
+      this._writeStream.write(this._header);
     }
   }]);
 

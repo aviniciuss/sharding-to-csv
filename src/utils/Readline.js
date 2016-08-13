@@ -2,42 +2,47 @@ import readline from 'readline';
 import { EventEmitter } from 'events';
 
 export class Readline extends EventEmitter {
-  constructor(input) {
+  constructor(stream) {
     super();
-    this.input = input;
-    this.initialize();
+    if(typeof(stream) !== 'object') {  throw new Error('Param stream invalid!'); }
+    this._input = stream;
+    this._initialize();
   }
 
-  initialize() {
-    this.lineCount = 0;
-    this.byteCount = 0;
+  _initialize() {
+    this._lineCount = 0;
+    this._byteCount = 0;
 
-    let rl = readline.createInterface({
-        input: this.input,
+    let rl = this._createReadline();
+
+    rl.on('open',  fd   => this._open(fd));
+    rl.on('line',  line => this._line(line));
+    rl.on('error', err  => this._error(err));
+    rl.on('close', ()   => this._close());
+  }
+
+  _createReadline() {
+    return readline.createInterface({
+        input: this._input,
         terminal: false
     });
-
-    rl.on('open', (fd) => { this.open(fd); });
-    rl.on('line', (line) => { this.line(line); });
-    rl.on('error', (err) => { this.error(err); });
-    rl.on('close', () => { this.close(); });
   }
 
-  open(fd) {
+  _open(fd) {
     this.emit('open', fd);
   }
 
-  line(line) {
-    this.byteCount += line.length;
-    this.emit('line', line, parseInt(this.lineCount, 10), parseInt(this.byteCount, 10));
-    this.lineCount++;
+  _line(line) {
+    this._byteCount += line.length;
+    this.emit('line', line, this._lineCount, this._byteCount);
+    this._lineCount++;
   }
 
-  error(err) {
+  _error(err) {
     this.emit('error', err);
   }
 
-  close() {
+  _close() {
     this.emit('close');
   }
 }

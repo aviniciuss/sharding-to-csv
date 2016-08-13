@@ -7,29 +7,21 @@ import { Readline } from './utils/Readline';
 export class ShardingToCsv extends EventEmitter {
   constructor(file, opts) {
     super();
-    this.file = file;
-    this.opts = opts || {};
-    this.opts.encoding = this.opts.encoding || 'utf-8';
-    this.opts.maxFileSize = this.opts.maxFileSize || 536870912;
-    this.initialize();
-  }
-
-  initialize() {
-    this.count = 0;
-    this.bytes = 0;
-    this.header = null;
-    this.filename = path.basename(this.file, path.extname(this.file));
-    this.writeStream = fs.createWriteStream(`${path.dirname(this.file)}/${this.filename}-${this.count}.csv`);
-    this.readStream = fs.createReadStream(this.file).pipe(iconv.decodeStream(this.opts.encoding));
-    this.rl = new Readline(this.readStream);
+    if(typeof(file) !== 'string') {  throw new Error('Param file invalid!'); }
+    if(typeof(opts) !== 'object') {  throw new Error('Param opts invalid!'); }
+    this._file = file;
+    this._opts = opts || {};
+    this._initialize();
   }
 
   shard() {
-    this.rl.on('line', (line, lineCount, byteCount) => { this.writeLine(line, lineCount, byteCount); });
+    let rl = new Readline(fs.createReadStream(this._file).pipe(iconv.decodeStream(this._opts.encoding)));
 
-    this.rl.on('close', () => {
-      if(fs.existsSync(this.file)) {
-        fs.unlinkSync(this.file);
+    rl.on('line', (line, lineCount, byteCount) => this._writeLine(line, lineCount, byteCount));
+
+    rl.on('close', () => {
+      if(fs.existsSync(this._file)) {
+        fs.unlinkSync(this._file);
       }
       this.emit('completed');
     });
@@ -37,20 +29,38 @@ export class ShardingToCsv extends EventEmitter {
     return this;
   }
 
-  writeLine(line, lineCount, byteCount) {
-    this.bytes += line.length;
+  _initialize() {
+    this._opts.encoding = this._opts.encoding  || 'utf-8';
+    this._opts.maxFileSize = this._opts.maxFileSize || 536870912;
+    this._count = 0;
+    this._bytes = 0;
+    this._filename = path.basename(this._file, path.extname(this._file));
+    this._writeStream = fs.createWriteStream(`${path.dirname(this._file)}/${this._filename}-${this._count}.csv`);
+  }
+
+  _writeLine(line, lineCount, byteCount) {
+    this._bytes += line.length;
+
     if(lineCount === 0) {
-      this.header = iconv.encode(`${line}\n`, this.opts.encoding);
+      this._saveHeaderFile(line);
     }
 
-    this.writeStream.write(iconv.encode(`${line}\n`, this.opts.encoding));
+    this._writeStream.write(iconv.encode(`${line}\n`, this._opts.encoding));
 
-    if(this.bytes >= this.opts.maxFileSize) {
-      this.count++;
-      this.bytes = 0;
-      this.writeStream.end();
-      this.writeStream = fs.createWriteStream(`${path.dirname(this.file)}/${this.filename}-${this.count}.csv`);
-      this.writeStream.write(this.header);
+    if(this._bytes >= this._opts.maxFileSize) {
+      this._count++;
+      this._bytes = 0;
+      this._writeStream.end();
+      this._newShard();
     }
+  }
+
+  _saveHeaderFile(line) {
+    this._header = iconv.encode(`${line}\n`, this._opts.encoding);
+  }
+
+  _newShard() {
+    this._writeStream = fs.createWriteStream(`${path.dirname(this._file)}/${this._filename}-${this._count}.csv`);
+    this._writeStream.write(this._header);
   }
 }
