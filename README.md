@@ -30,6 +30,8 @@ Um simples módulo para NodeJS. Com a função de particionar arquivos grandes.
 
 # Usando
 ```javascript
+var ShardingToCsv = require('sharding-to-csv').ShardingToCsv;
+ou
 import { ShardingToCsv } from 'sharding-to-csv';
 
 new ShardingToCsv('./path/file.csv', { encoding: 'iso-8859-1', maxFileSize: 536870912 }).shard().on('completed', () => {
