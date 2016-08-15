@@ -1,34 +1,34 @@
 # Sharding to CSV
 
-> Particiona um grande arquivo csv em partes.
+> Break a large csv file into small parts.
 
-# Instalar
+# Install
 ```
 $ npm install sharding-to-csv
 ```
 
-# Testes
+# Tests
 
 ```
 $ npm install
 $ npm test
 ```
 
-# O que é isso?
+# What is it?
 
-Um simples módulo para NodeJS, com a função de particionar arquivos ".CSV" muito grandes, permitindo assim sua manipulação em aplicações com restrições de memória.
+A simple NodeJS module that breaks large csv files into small files to allow manipulation on applications with memory restrictions.
 
 # API
-## Parâmetros:
-- `file` - caminho do arquivo.
+## Parameters:
+- `file` - The file path.
 - options:
-    - `encoding` - encoding de read e write stream.
-    - `maxFileSize` - tamanho dos arquivos particionados.
+    - `encoding` - encoding to use with read and write streams.
+    - `maxFileSize` - determines the size of partitioned files.
 
-## Retorno:
+## Return:
 - EventEmitter
 
-# Usando
+# Using
 ```javascript
 var ShardingToCsv = require('sharding-to-csv').ShardingToCsv;
 
@@ -38,5 +38,5 @@ new ShardingToCsv('./path/file.csv', { encoding: 'iso-8859-1', maxFileSize: 5368
 });
 ```
 
-## Licença
+## License
 - MIT
