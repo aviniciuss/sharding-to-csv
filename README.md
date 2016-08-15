@@ -32,10 +32,12 @@ A simple NodeJS module that breaks large csv files into small files to allow man
 ```javascript
 var ShardingToCsv = require('sharding-to-csv').ShardingToCsv;
 
-new ShardingToCsv('./path/file.csv', { encoding: 'iso-8859-1', maxFileSize: 536870912 })
-.shard().on('completed', () => {
-    console.log('completed');
-});
+var sharding = new ShardingToCsv('./path/file.csv',
+    { encoding: 'iso-8859-1', maxFileSize: 10485760 }).shard();
+
+sharding.on('completed', () => console.log('completed'));
+
+sharding.on('error', err => console.log(err));
 ```
 
 ## License

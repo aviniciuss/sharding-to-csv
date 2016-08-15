@@ -71,6 +71,10 @@ var ShardingToCsv = exports.ShardingToCsv = function (_EventEmitter) {
         _this2.emit('completed');
       });
 
+      rl.on('error', function (err) {
+        return _this2.emit('error', err);
+      });
+
       return this;
     }
   }, {
@@ -86,29 +90,30 @@ var ShardingToCsv = exports.ShardingToCsv = function (_EventEmitter) {
   }, {
     key: '_writeLine',
     value: function _writeLine(line, lineCount, byteCount) {
+      var encodingLine = _iconvLite2.default.encode(line + '\n', this._opts.encoding);
       this._bytes += line.length;
 
       if (lineCount === 0) {
-        this._saveHeaderFile(line);
+        this._setHeaderFile(encodingLine);
       }
 
-      this._writeStream.write(_iconvLite2.default.encode(line + '\n', this._opts.encoding));
+      this._writeStream.write(encodingLine);
 
       if (this._bytes >= this._opts.maxFileSize) {
-        this._count++;
         this._bytes = 0;
         this._writeStream.end();
         this._newShard();
       }
     }
   }, {
-    key: '_saveHeaderFile',
-    value: function _saveHeaderFile(line) {
-      this._header = _iconvLite2.default.encode(line + '\n', this._opts.encoding);
+    key: '_setHeaderFile',
+    value: function _setHeaderFile(line) {
+      this._header = line;
     }
   }, {
     key: '_newShard',
     value: function _newShard() {
+      this._count++;
       this._writeStream = _fs2.default.createWriteStream(_path2.default.dirname(this._file) + '/' + this._filename + '-' + this._count + '.csv');
       this._writeStream.write(this._header);
     }

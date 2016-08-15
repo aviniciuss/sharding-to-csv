@@ -26,6 +26,8 @@ export class ShardingToCsv extends EventEmitter {
       this.emit('completed');
     });
 
+    rl.on('error', (err) => this.emit('error', err));
+
     return this;
   }
 
@@ -39,27 +41,28 @@ export class ShardingToCsv extends EventEmitter {
   }
 
   _writeLine(line, lineCount, byteCount) {
+    let encodingLine = iconv.encode(`${line}\n`, this._opts.encoding);
     this._bytes += line.length;
 
     if(lineCount === 0) {
-      this._saveHeaderFile(line);
+      this._setHeaderFile(encodingLine);
     }
 
-    this._writeStream.write(iconv.encode(`${line}\n`, this._opts.encoding));
+    this._writeStream.write(encodingLine);
 
     if(this._bytes >= this._opts.maxFileSize) {
-      this._count++;
       this._bytes = 0;
       this._writeStream.end();
       this._newShard();
     }
   }
 
-  _saveHeaderFile(line) {
-    this._header = iconv.encode(`${line}\n`, this._opts.encoding);
+  _setHeaderFile(line) {
+    this._header = line;
   }
 
   _newShard() {
+    this._count++;
     this._writeStream = fs.createWriteStream(`${path.dirname(this._file)}/${this._filename}-${this._count}.csv`);
     this._writeStream.write(this._header);
   }

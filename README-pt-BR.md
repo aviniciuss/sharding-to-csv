@@ -32,10 +32,12 @@ Um simples módulo para NodeJS, com a função de particionar arquivos ".CSV" mu
 ```javascript
 var ShardingToCsv = require('sharding-to-csv').ShardingToCsv;
 
-new ShardingToCsv('./path/file.csv', { encoding: 'iso-8859-1', maxFileSize: 536870912 })
-.shard().on('completed', () => {
-    console.log('completed');
-});
+var sharding = new ShardingToCsv('./path/file.csv',
+    { encoding: 'iso-8859-1', maxFileSize: 10485760 }).shard();
+
+sharding.on('completed', () => console.log('completed'));
+
+sharding.on('error', err => console.log(err));
 ```
 
 ## Licença
